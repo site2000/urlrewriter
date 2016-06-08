@@ -1,0 +1,5 @@
+[DEFAULT]
+user = youruser
+pswd = yourpassword
+oauth_client_id = client_id_obtained_from_reddit
+oauth_client_secret = client_secret_obtained_from_reddit
