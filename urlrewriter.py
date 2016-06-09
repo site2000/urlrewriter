@@ -242,6 +242,14 @@ for subm in subr.get_new(limit = SubmissionLimit):
 
     if text != '':
         print text
+        # Avoid double comments on a submission by updating the last run record.
+        # The checks for older submissions will be dropped but it is ok since
+        # this program is not expected to run perfectly...
+        if n_rwt == 0:
+            appconfig.last_id = this_last_id
+            appconfig.last_date = this_last_date
+            appconfig.write()
+
         try:
             subm.add_comment(text + Footer)
         except praw.errors.InvalidCaptcha, e:
