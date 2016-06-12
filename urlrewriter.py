@@ -48,7 +48,9 @@ def _sankei_next_check(url):
     except URLError, e:
         print url.encode('utf_8') + ': ' + e.reason
         return False
-    return '<link rel="next"' in rsp.read().lower()
+    text = rsp.read().lower()
+    rsp.close()
+    return '<link rel="next"' in text
 
 def _ism_next_check(url):
     try:
@@ -57,6 +59,7 @@ def _ism_next_check(url):
         print url.encode('utf_8') + ': ' + e.reason
         return False
     text = rsp.read().lower()
+    rsp.close()
     return \
         '<div id="multipage"' in text or \
         '<span class="pagination">' in text or \
