@@ -103,7 +103,7 @@ class RewritableURL(object):
             #None,
             #lambda mo: mo.group(1) + "://www.nikkei.com/article/" + mo.group(3),
             #'Non-mobile link'],
-                    ])
+        ])
 
     def __init__(self, url):
         self.url = url
@@ -225,12 +225,14 @@ this_last_date = 0.0
 this_last_id = ''
 
 n_rwt = n_cap = n_new = 0
+last_id = appconfig.last_id
+last_date = appconfig.last_date
 for subm in subr.get_new(limit = SubmissionLimit):
     if this_last_date == 0.0:
         this_last_date = subm.created_utc
         this_last_id = subm.id
 
-    if subm.created_utc < appconfig.last_date or subm.id == appconfig.last_id:
+    if subm.created_utc < last_date or subm.id == last_id:
         break
     
     n_new += 1
