@@ -45,7 +45,7 @@ class URLRewrite:
 def _sankei_next_check(url):
     try:
         rsp = urllib2.urlopen(url)
-    except URLError, e:
+    except urllib2.URLError, e:
         print url.encode('utf_8') + ': ' + e.reason
         return False
     text = rsp.read().lower()
@@ -55,7 +55,7 @@ def _sankei_next_check(url):
 def _ism_next_check(url):
     try:
         rsp = urllib2.urlopen(url)
-    except URLError, e:
+    except urllib2.URLError, e:
         print url.encode('utf_8') + ': ' + e.reason
         return False
     text = rsp.read().lower()
