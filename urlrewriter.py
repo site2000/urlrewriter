@@ -97,12 +97,6 @@ class RewritableURL(object):
              None,
              lambda mo: mo.group(1) + "://news.tbs.co.jp/" + mo.group(2),
              'Non-mobile link'],
-
-            # (automatically) redirected to non-mobile page
-            #['(https?)://mw.nikkei.com/sp/(#!/)?article/(.+)',
-            #None,
-            #lambda mo: mo.group(1) + "://www.nikkei.com/article/" + mo.group(3),
-            #'Non-mobile link'],
         ])
 
     def __init__(self, url):
