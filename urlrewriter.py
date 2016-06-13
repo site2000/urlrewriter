@@ -65,6 +65,18 @@ def _ism_next_check(url):
         '<span class="pagination">' in text or \
         '<div class="article-pagination">' in text
 
+def _reuters_next_check(url):
+    if re.match('.+sp=true$', url):
+        return False
+    try:
+        rsp = urllib2.urlopen(url)
+    except urllib2.URLError, e:
+        print url.encode('utf_8') + ': ' + e.reason
+        return False
+    text = rsp.read().lower()
+    rsp.close()
+    return '<a id="singlePageLink"' in text:
+
 # need new-style class for property
 class RewritableURL(object):
     rewriters = map(
@@ -80,6 +92,10 @@ class RewritableURL(object):
              _sankei_next_check,
              lambda mo: mo.group(1) + '://www.sankei.com/' + mo.group(2) + '/print/' + mo.group(3) + '-c.html',
              'Single (printer-friendly) page link'],
+            ['(https?)://jp.reuters.com/article/(.+)',
+             _reuters_next_check,
+             lambda mo: mo.group(1) + '://jp.reuters.com/article/' + mo.group(2) + '?sp=true',
+             'Single page link'],
                          
             ['(https?)://www.dailyshincho.jp/article/(.+/)(?!\?all=1)$',
              None,
