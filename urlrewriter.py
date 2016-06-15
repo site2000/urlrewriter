@@ -214,71 +214,74 @@ def rewrite_info_message(url):
     else:
         return ''
 
-appconfig = AppConfig()
+def main():
+    appconfig = AppConfig()
 
-reddit = praw.Reddit(UserAgent)
+    reddit = praw.Reddit(UserAgent)
 
-oauth_token = praw_script_oauth.get_oauth_token(
-    reddit.config.client_id,
-    reddit.config.client_secret,
-    reddit.config.user,
-    reddit.config.pswd,
-    UserAgent)
-reddit.set_oauth_app_info(
-    reddit.config.client_id,
-    reddit.config.client_secret,
-    'http://unused.example.com/')
-reddit.set_access_credentials('*', oauth_token)
-reddit.config.api_request_delay = 1
-                                                 
-#print 'Authenicated as ' + str(reddit.get_me())
+    oauth_token = praw_script_oauth.get_oauth_token(
+        reddit.config.client_id,
+        reddit.config.client_secret,
+        reddit.config.user,
+        reddit.config.pswd,
+        UserAgent)
+    reddit.set_oauth_app_info(
+        reddit.config.client_id,
+        reddit.config.client_secret,
+        'http://unused.example.com/')
+    reddit.set_access_credentials('*', oauth_token)
+    reddit.config.api_request_delay = 1
 
-subr = reddit.get_subreddit(appconfig.subreddit)
+    #print 'Authenicated as ' + str(reddit.get_me())
 
-this_last_date = 0.0
-this_last_id = ''
+    subr = reddit.get_subreddit(appconfig.subreddit)
 
-n_rwt = n_cap = n_new = 0
-last_id = appconfig.last_id
-last_date = appconfig.last_date
-for subm in subr.get_new(limit = SubmissionLimit):
-    if this_last_date == 0.0:
-        this_last_date = subm.created_utc
-        this_last_id = subm.id
+    this_last_date = 0.0
+    this_last_id = ''
+    n_rwt = n_cap = n_new = 0
+    last_id = appconfig.last_id
+    last_date = appconfig.last_date
+    for subm in subr.get_new(limit = SubmissionLimit):
+        if this_last_date == 0.0:
+            this_last_date = subm.created_utc
+            this_last_id = subm.id
 
-    if subm.created_utc < last_date or subm.id == last_id:
-        break
-    
-    n_new += 1
-    text = ''
-    if subm.is_self:
-        if subm.selftext_html:
-            for url in re.findall('<a href="(https?://[^\s>]+)">',
-                                  subm.selftext_html):
-                text += rewrite_info_message(url)
-    else:
-        text = rewrite_info_message(subm.url)
-
-    if text != '':
-        print text
-        # Avoid double comments on a submission by updating the last run record.
-        # The checks for older submissions will be dropped but it is ok since
-        # this program is not expected to run perfectly...
-        if n_rwt == 0:
-            appconfig.last_id = this_last_id
-            appconfig.last_date = this_last_date
-            appconfig.write()
-
-        try:
-            subm.add_comment((text + Footer).encode('utf_8'))
-        except praw.errors.InvalidCaptcha, e:
-            n_cap += 1
+        if subm.created_utc < last_date or subm.id == last_id:
             break
-        n_rwt += 1
 
-if n_new > 0:
-    print "Processed %d, rewritten %d, captcha-ed %d" % (n_new, n_rwt, n_cap)
+        n_new += 1
+        text = ''
+        if subm.is_self:
+            if subm.selftext_html:
+                for url in re.findall('<a href="(https?://[^\s>]+)">',
+                                      subm.selftext_html):
+                    text += rewrite_info_message(url)
+        else:
+            text = rewrite_info_message(subm.url)
 
-appconfig.last_id = this_last_id
-appconfig.last_date = this_last_date
-appconfig.write()
+        if text != '':
+            print text
+            # Avoid double comments on a submission by updating the last run record.
+            # The checks for older submissions will be dropped but it is ok since
+            # this program is not expected to run perfectly...
+            if n_rwt == 0:
+                appconfig.last_id = this_last_id
+                appconfig.last_date = this_last_date
+                appconfig.write()
+
+            try:
+                subm.add_comment((text + Footer).encode('utf_8'))
+            except praw.errors.InvalidCaptcha, e:
+                n_cap += 1
+                break
+            n_rwt += 1
+
+    if n_new > 0:
+        print "Processed %d, rewritten %d, captcha-ed %d" % (n_new, n_rwt, n_cap)
+
+    appconfig.last_id = this_last_id
+    appconfig.last_date = this_last_date
+    appconfig.write()
+
+if __name__ == '__main__':
+    main()
