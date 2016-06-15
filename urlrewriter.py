@@ -266,7 +266,7 @@ for subm in subr.get_new(limit = SubmissionLimit):
             appconfig.write()
 
         try:
-            subm.add_comment(text + Footer)
+            subm.add_comment((text + Footer).encode('utf_8'))
         except praw.errors.InvalidCaptcha, e:
             n_cap += 1
             break
