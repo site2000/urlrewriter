@@ -18,7 +18,7 @@ except ImportError:
 UserAgent = 'URLRewriter'
 SubmissionLimit = 100
 
-Footer = "***\n^^code ^^in [^^github](https://github.com/site2000/urlrewriter/)"
+Footer = u"***\n^^code ^^in [^^github](https://github.com/site2000/urlrewriter/)"
 
 class URLRewrite:
     def __init__(self, mr):
@@ -87,36 +87,36 @@ class RewritableURL(object):
             ['(https?://)(diamond\.jp|gendai\.ismedia\.jp|jbpress\.ismedia\.jp|wedge\.ismedia\.jp)/articles/-/([\d]+)',
              _ism_next_check,
              lambda mo: mo.group(1) + mo.group(2) + "/articles/print/" + mo.group(3),
-             'Single (printer-friendly) page link'],
+             u'Single (printer-friendly) page link'],
             ['(https?)://www.sankei.com/(.+?)/news/(.+)-n\d.html',
              _sankei_next_check,
              lambda mo: mo.group(1) + '://www.sankei.com/' + mo.group(2) + '/print/' + mo.group(3) + '-c.html',
-             'Single (printer-friendly) page link'],
+             u'Single (printer-friendly) page link'],
             ['(https?)://jp.reuters.com/article/(.+)',
              _reuters_next_check,
              lambda mo: mo.group(1) + '://jp.reuters.com/article/' + mo.group(2) + '?sp=true',
-             'Single page link'],
+             u'Single page link'],
                          
             ['(https?)://www.dailyshincho.jp/article/(.+/)(?!\?all=1)$',
              None,
              lambda mo: mo.group(1) + '://www.dailyshincho.jp/article/' + mo.group(2) + '?all=1',
-             'Read all'],
+             u'Read all'],
             ['https://m.reddit.com/(.+)',
              None,
              lambda mo: "https://www.reddit.com/" + mo.group(1),
-             'Non-mobile link'],
+             u'Non-mobile link'],
             ['(https?)://jp.mobile.reuters.com/(.+)',
              None,
              lambda mo: mo.group(1) + "://jp.reuters.com/" + mo.group(2),
-             'Non-mobile link'],
+             u'Non-mobile link'],
             ['(https?)://sp.yomiuri.co.jp/(.+)',
              None,
              lambda mo: mo.group(1) + "://www.yomiuri.co.jp/" + mo.group(2),
-             'Non-mobile link'],
+             u'Non-mobile link'],
             ['(https?)://news.tbs.co.jp/sp/(.+)',
              None,
              lambda mo: mo.group(1) + "://news.tbs.co.jp/" + mo.group(2),
-             'Non-mobile link'],
+             u'Non-mobile link'],
         ])
 
     def __init__(self, url):
@@ -210,9 +210,9 @@ def rewrite_info_message(url):
     reurl = RewritableURL(url)
     s = reurl.rewritten_url
     if s is not None:
-        return reurl.rewriter + ":  \n" + s + "\n\n"
+        return reurl.rewriter + u":  \n" + s + u"\n\n"
     else:
-        return ''
+        return u''
 
 def main():
     appconfig = AppConfig()
@@ -250,7 +250,7 @@ def main():
             break
 
         n_new += 1
-        text = ''
+        text = u''
         if subm.is_self:
             if subm.selftext_html:
                 for url in re.findall('<a href="(https?://[^\s>]+)">',
