@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 
 # Only tested on Python 2.7.  Might not run on Python 3.x.
 
