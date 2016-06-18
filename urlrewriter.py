@@ -261,8 +261,8 @@ def main():
         else:
             text = rewrite_info_message(subm.url)
 
-        if text != '':
-            print text
+        if text != u'':
+            print text.encode('utf_8')
             # Avoid double comments on a submission by updating the last run record.
             # The checks for older submissions will be dropped but it is ok since
             # this program is not expected to run perfectly...
