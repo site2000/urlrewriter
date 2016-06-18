@@ -109,7 +109,7 @@ class RewritableURL(object):
              u'PC向けURL'],
             ['(https?)://jp.mobile.reuters.com/(.+)',
              None,
-             lambda mo: mo.group(1) + "://jp.reuters.com/" + mo.group(2),
+             lambda mo: mo.group(1) + "://jp.reuters.com/" + mo.group(2) + '?sp=true',
              u'PC向けURL'],
             ['(https?)://sp.yomiuri.co.jp/(.+)',
              None,
