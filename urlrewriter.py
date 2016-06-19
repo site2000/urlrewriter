@@ -18,6 +18,7 @@ except ImportError:
     import configparser
 
 UserAgent = 'URLRewriter'
+ScraperUserAgent = 'a Mozilla/5.0 incompatible agent'
 SubmissionLimit = 100
 
 Footer = u"***\n^^code ^^in [^^github](https://github.com/site2000/urlrewriter/)"
@@ -138,6 +139,16 @@ class RewritableURL(object):
             self._is_rewritable = not (self._rewritten_url is None)
             if self._is_rewritable:
                 self._rewriter = ur.description()
+                req = urllib2.Request(self._rewritten_url,
+                                      headers={'User-Agent': ScraperUserAgent})
+                try:
+                    rsp = urllib2.urlopen(req)
+                    rsp.close()
+                except URLError, e:
+                    print url.encode('utf_8') + ': ' + e.reason
+                    self._rewritten_url = None
+                    self._is_rewritable = False
+                    self._rewriter = None
 
     @property
     def rewritten_url(self):
