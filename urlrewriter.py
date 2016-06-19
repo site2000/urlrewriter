@@ -135,7 +135,7 @@ class RewritableURL(object):
                     if ur.check(self.url):
                         self._rewritten_url = ur.sub(m)
                         break
-            self._is_rewritable = (self._rewritten_url is None)
+            self._is_rewritable = not (self._rewritten_url is None)
             self._rewriter = ur.description()
 
     @property
