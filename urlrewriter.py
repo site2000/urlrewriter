@@ -78,7 +78,7 @@ def _reuters_next_check(url):
         return False
     text = rsp.read().lower()
     rsp.close()
-    return '<a id="singlePageLink"' in text
+    return '<a id="singlepagelink"' in text
 
 # need new-style class for property
 class RewritableURL(object):
