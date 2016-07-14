@@ -87,7 +87,7 @@ class RewritableURL(object):
         [
             # The print pages of toyokeizai.net seem to check referer.
             # Can not open them directly.
-            ['(https?://)(diamond\.jp|gendai\.ismedia\.jp|jbpress\.ismedia\.jp|wedge\.ismedia\.jp)/articles/-/([\d]+)',
+            ['(https?://)(diamond\.jp|gendai\.ismedia\.jp|jbpress\.ismedia\.jp)/articles/-/([\d]+)',
              _ism_next_check,
              lambda mo: mo.group(1) + mo.group(2) + "/articles/print/" + mo.group(3),
              u'1ページで表示(プリンタ向けページ使用)'],
