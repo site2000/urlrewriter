@@ -9,6 +9,7 @@ import re
 import codecs
 import sys
 import os
+import urlparse
 import urllib2
 import praw_script_oauth
 
@@ -33,19 +34,19 @@ class URLRewrite:
     def match(self, url):
         return re.match(self._match, url)
 
-    def check(self, url):
+    def check(self, url, title=''):
         if self._check:
-            return self._check(url)
+            return self._check(url, title)
         else:
             return True
 
-    def sub(self, mo):
-        return self._repl(mo)
+    def sub(self, mo, title):
+        return self._repl(mo, title)
 
     def description(self):
         return self._desc
 
-def _sankei_next_check(url):
+def _sankei_next_check(url, title):
     try:
         rsp = urllib2.urlopen(url)
     except urllib2.URLError, e:
@@ -55,7 +56,7 @@ def _sankei_next_check(url):
     rsp.close()
     return '<link rel="next"' in text
 
-def _ism_next_check(url):
+def _ism_next_check(url, title):
     try:
         rsp = urllib2.urlopen(url)
     except urllib2.URLError, e:
@@ -68,7 +69,7 @@ def _ism_next_check(url):
         '<span class="pagination">' in text or \
         '<div class="article-pagination">' in text
 
-def _reuters_next_check(url):
+def _reuters_next_check(url, title):
     if re.match('.+sp=true$', url):
         return False
     try:
@@ -80,6 +81,61 @@ def _reuters_next_check(url):
     rsp.close()
     return '<a id="singlepagelink"' in text
 
+def _mainichi_yahoo_rewriter(url, title):
+    # The type of Submission.title is unicode, not str.
+    reqhdr = {'User-Agent': ScraperUserAgent}
+    req = urllib2.Request(url, headers=reqhdr)
+    try:
+        rsp = urllib2.urlopen(req)
+    except urllib2.URLError, e:
+        print url.encode('utf_8') + ': ' + e.reason
+        return None
+    text = rsp.read()
+    rsp.close()
+    m = re.search('<title>(.+)</title>', text)
+    if m is None:
+        t = title
+    else:
+        # articles without registration, no need to rewrite
+        return None
+        #td = m.group(1).decode('utf_8')
+        #if re.match(u'会員登録のお願い', td):
+        #    t = title
+        #else:
+        #    t = td
+
+    t = re.sub(u' - 毎日新聞', '', t)
+    m = re.match(u'(.+?)：(.+)', t)
+    if m is None:
+        y_title = t
+    else:
+        y_title = u'＜' + m.group(1) + u'＞' + m.group(2)
+    srch_url = 'http://news.search.yahoo.co.jp/search?p=' + \
+               urllib2.quote(y_title.encode('utf_8')) + \
+               u'&ei=UTF-8&fr=news_sw'
+    req = urllib2.Request(srch_url, headers=reqhdr)
+    try:
+        rsp = urllib2.urlopen(req)
+    except urllib2.URLError, e:
+        print url.encode('utf_8') + ': ' + e.reason
+        return None
+    srch_text = rsp.read()
+    rsp.close()
+    for yurl in re.findall('<a href="(http://headlines.yahoo.co.jp/hl.+?)"',
+                           srch_text):
+        req = urllib2.Request(yurl, headers=reqhdr)
+        try:
+            rsp = urllib2.urlopen(req)
+        except urllib2.URLError, e:
+            print url.encode('utf_8') + ': ' + e.reason
+            return None
+        text = rsp.read()
+        rsp.close()
+        if ('<title>' + y_title.split(' ')[0]) in text.decode('utf_8'):
+            print url + ' -> ' + yurl
+            return yurl
+    return None
+
 # need new-style class for property
 class RewritableURL(object):
     rewriters = map(
@@ -89,41 +145,46 @@ class RewritableURL(object):
             # Can not open them directly.
             ['(https?://)(diamond\.jp|gendai\.ismedia\.jp|jbpress\.ismedia\.jp)/articles/-/([\d]+)',
              _ism_next_check,
-             lambda mo: mo.group(1) + mo.group(2) + "/articles/print/" + mo.group(3),
+             lambda mo, t: mo.group(1) + mo.group(2) + "/articles/print/" + mo.group(3),
              u'1ページで表示(プリンタ向けページ使用)'],
             ['(https?)://www.sankei.com/(.+?)/news/(.+)-n\d.html',
              _sankei_next_check,
-             lambda mo: mo.group(1) + '://www.sankei.com/' + mo.group(2) + '/print/' + mo.group(3) + '-c.html',
+             lambda mo, t: mo.group(1) + '://www.sankei.com/' + mo.group(2) + '/print/' + mo.group(3) + '-c.html',
              u'1ページで表示(プリンタ向けページ使用)'],
             ['(https?)://jp.reuters.com/article/(.+)',
              _reuters_next_check,
-             lambda mo: mo.group(1) + '://jp.reuters.com/article/' + mo.group(2) + '?sp=true',
+             lambda mo, t: mo.group(1) + '://jp.reuters.com/article/' + mo.group(2) + '?sp=true',
              u'1ページで表示'],
                          
             ['(https?)://www.dailyshincho.jp/article/(.+/)(?!\?all=1)$',
              None,
-             lambda mo: mo.group(1) + '://www.dailyshincho.jp/article/' + mo.group(2) + '?all=1',
+             lambda mo, t: mo.group(1) + '://www.dailyshincho.jp/article/' + mo.group(2) + '?all=1',
              u'全て読む'],
             ['https://m.reddit.com/(.+)',
              None,
-             lambda mo: "https://www.reddit.com/" + mo.group(1),
+             lambda mo, t: "https://www.reddit.com/" + mo.group(1),
              u'PC向けURL'],
             ['(https?)://jp.mobile.reuters.com/(.+)',
              None,
-             lambda mo: mo.group(1) + "://jp.reuters.com/" + mo.group(2) + '?sp=true',
+             lambda mo, t: mo.group(1) + "://jp.reuters.com/" + mo.group(2) + '?sp=true',
              u'PC向けURL'],
             ['(https?)://sp.yomiuri.co.jp/(.+)',
              None,
-             lambda mo: mo.group(1) + "://www.yomiuri.co.jp/" + mo.group(2),
+             lambda mo, t: mo.group(1) + "://www.yomiuri.co.jp/" + mo.group(2),
              u'PC向けURL'],
             ['(https?)://news.tbs.co.jp/sp/(.+)',
              None,
-             lambda mo: mo.group(1) + "://news.tbs.co.jp/" + mo.group(2),
+             lambda mo, t: mo.group(1) + "://news.tbs.co.jp/" + mo.group(2),
              u'PC向けURL'],
+            ['https?://mainichi.jp/.*articles/.+',
+             None,
+             lambda mo, t: _mainichi_yahoo_rewriter(mo.group(0), t),
+             u'Yahooニュースへの配信版'],
         ])
 
-    def __init__(self, url):
+    def __init__(self, url, title):
         self.url = url
+        self.title = title
         self._rewritten_url = None
         self._is_rewritable = None
         self._rewriter = None
@@ -133,8 +194,8 @@ class RewritableURL(object):
             for ur in RewritableURL.rewriters:
                 m = ur.match(self.url)
                 if m:
-                    if ur.check(self.url):
-                        self._rewritten_url = ur.sub(m)
+                    if ur.check(self.url, self.title):
+                        self._rewritten_url = ur.sub(m, self.title)
                         break
             self._is_rewritable = not (self._rewritten_url is None)
             if self._is_rewritable:
@@ -219,9 +280,9 @@ class AppConfig(object):
 
 #######################################################################
 
-def rewrite_info_message(url):
+def rewrite_info_message(url, title=''):
     #print "Checking for " + url.encode('utf_8')
-    reurl = RewritableURL(url)
+    reurl = RewritableURL(url, title)
     s = reurl.rewritten_url
     if s is not None:
         return reurl.rewriter + u":  \n" + s + u"\n\n"
@@ -271,7 +332,7 @@ def main():
                                       subm.selftext_html):
                     text += rewrite_info_message(url)
         else:
-            text = rewrite_info_message(subm.url)
+            text = rewrite_info_message(subm.url, subm.title)
 
         if text != u'':
             print text.encode('utf_8')
