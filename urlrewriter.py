@@ -87,11 +87,16 @@ def _mainichi_yahoo_rewriter(url, title):
     req = urllib2.Request(url, headers=reqhdr)
     try:
         rsp = urllib2.urlopen(req)
+        text = rsp.read()
+        rsp.close()
     except urllib2.URLError, e:
-        print url.encode('utf_8') + ': ' + e.reason
-        return None
-    text = rsp.read()
-    rsp.close()
+        if e.code == 302:
+            # redirect loop, lookup the alternative page on yahoo
+            text = ''
+        else:
+            print url.encode('utf_8') + ': ' + e.reason
+            print 'code=' + str(e.code)
+            return None
     m = re.search('<title>(.+)</title>', text)
     if m is None:
         t = title
