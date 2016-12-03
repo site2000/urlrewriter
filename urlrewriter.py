@@ -22,7 +22,7 @@ UserAgent = 'URLRewriter'
 ScraperUserAgent = 'a Mozilla/5.0 incompatible agent'
 SubmissionLimit = 100
 
-Footer = u"***\n^^code ^^in [^^github](https://github.com/site2000/urlrewriter/)"
+Footer = u"***\n^^botによる書き込みです ^^code ^^in [^^github](https://github.com/site2000/urlrewriter/)"
 
 class URLRewrite:
     def __init__(self, mr):
