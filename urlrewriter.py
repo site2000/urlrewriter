@@ -141,6 +141,74 @@ def _mainichi_yahoo_rewriter(url, title):
             return yurl
     return None
 
+def _google_translate_url(url):
+    return 'https://translate.google.co.jp/translate?sl=auto&tl=ja&u=' + \
+        urllib2.quote(url, safe='')
+
+def _check_eigo(url, title):
+    reqhdr = {'User-Agent' : 'a Mozilla/5.0 incompatible browser'}
+    up = urlparse.urlparse(url)
+    if up.hostname[-2:] == 'jp' or up.hostname[0:3] == 'jp.':
+        return False
+    elif 'imgur.com' in up.hostname:
+        return False
+    elif up.hostname == 'pbs.twimg.com':
+        return False
+    elif up.hostname == 'www.nytimes.com':
+        # nytimes needs to login when accessed via google translate
+        return False
+
+    req = urllib2.Request(url, headers=reqhdr)
+    try:
+        f = urllib2.urlopen(req)
+    except urllib2.URLError, e:
+        print url.encode('utf_8') + ': ' + e.reason
+        return False
+    except UnicodeEncodeError, e:
+        print url.encode('utf_8') + ': contains non-ascii char'
+        return False
+    text = f.read()
+    f.close()
+
+    if f.info().getmaintype() != 'text':
+        return False
+    if len(text) < 1024:
+        # small enough to read (really?)
+        return False
+
+    try:
+        text_j = text.decode('cp932')
+        return False
+    except UnicodeDecodeError, e:
+        pass
+    try:
+        text_j = text.decode('euc_jp')
+        return False
+    except UnicodeDecodeError, e:
+        pass
+
+    # silly but works (though cp1252 is not for eigo but for latin char).
+    try:
+        text_utf8 = text.decode('utf_8')
+        text_cp1252 = text_utf8.encode('cp1252')
+    except UnicodeDecodeError, e:
+        try:
+            text_cp1252 = text.decode('cp1252')
+        except UnicodeDecodeError, e:
+            return False
+    except UnicodeEncodeError, e:
+        return False
+
+    xlturl = _google_translate_url(url)
+    req = urllib2.Request(xlturl, headers=reqhdr)
+    try:
+        f = urllib2.urlopen(req)
+        f.close()
+    except urllib2.URLError, e:
+        print xlturl.encode('utf_8') + ': ' + e.reason
+
+    return True
+
 # need new-style class for property
 class RewritableURL(object):
     rewriters = map(
@@ -190,6 +258,10 @@ class RewritableURL(object):
              None,
              lambda mo, t: _mainichi_yahoo_rewriter(mo.group(0), t),
              u'Yahooニュースへの配信版'],
+            ['(https?://)(.+)',
+             _check_eigo,
+             lambda mo, t: _google_translate_url(mo.group(0)),
+             u'Google翻訳'],
         ])
 
     def __init__(self, url, title):
