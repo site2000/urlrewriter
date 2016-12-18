@@ -176,28 +176,58 @@ def _check_eigo(url, title):
         # small enough to read (really?)
         return False
 
-    try:
-        text_j = text.decode('cp932')
-        return False
-    except UnicodeDecodeError, e:
-        pass
-    try:
-        text_j = text.decode('euc_jp')
-        return False
-    except UnicodeDecodeError, e:
-        pass
-
-    # silly but works (though cp1252 is not for eigo but for latin char).
-    try:
-        text_utf8 = text.decode('utf_8')
-        text_cp1252 = text_utf8.encode('cp1252')
-    except UnicodeDecodeError, e:
-        try:
-            text_cp1252 = text.decode('cp1252')
-        except UnicodeDecodeError, e:
+    m = re.search('charset=(\S+)', f.info()['content-type'].lower())
+    try_encode = True
+    if m:
+        enc = m.group(1)
+        if re.match('iso-8859', enc):
+            try_encode = False
+        elif enc == 'ascii':
+            try_encode = False
+        elif enc == 'iso-2022-kr':
+            try_encode = False
+        elif enc == 'iso-2022-cn':
+            try_encode = False
+        elif enc == 'utf-8':
+            try_encode = 'True'
+        elif enc == 'iso-2022-jp':
             return False
-    except UnicodeEncodeError, e:
-        return False
+        elif enc == 'euc-jp':
+            return False
+        elif enc == 'shift_jis':
+            return False
+        elif enc == 'cp932':
+            return False
+    else:
+        # no charset= specified, trying to decode
+        try:
+            text_j = text.decode('iso-2022-jp')
+            return False
+        except UnicodeDecodeError, e:
+            pass
+        try:
+            text_j = text.decode('euc_jp')
+            return False
+        except UnicodeDecodeError, e:
+            pass
+        try:
+            text_j = text.decode('cp932')
+            return False
+        except UnicodeDecodeError, e:
+            pass
+
+    if try_encode:
+        # silly but works (though cp1252 is not for eigo but for latin char).
+        try:
+            text_utf8 = text.decode('utf_8')
+            text_cp1252 = text_utf8.encode('cp1252')
+        except UnicodeDecodeError, e:
+            try:
+                text_cp1252 = text.decode('cp1252')
+            except UnicodeDecodeError, e:
+                return False
+        except UnicodeEncodeError, e:
+            return False
 
     xlturl = _google_translate_url(url)
     req = urllib2.Request(xlturl, headers=reqhdr)
