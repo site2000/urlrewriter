@@ -157,6 +157,9 @@ def _check_eigo(url, title):
     elif up.hostname == 'www.nytimes.com':
         # nytimes needs to login when accessed via google translate
         return False
+    elif re.match('translate\.google\.', up.hostname):
+        # do not translate google translate link
+        return False
 
     req = urllib2.Request(url, headers=reqhdr)
     try:
